@@ -11,6 +11,7 @@ Our goal is to make Namors focus on:
 - VLMs and Omni model is our goal, helpfully we can using Rust deploy MLLMs simply;
 - Quantization, we would explore many ways to run int8 or int4 for fastest inference.
 
+The first goal would be inference Namo-R1 in pure Rust: https://github.com/lucasjinreal/Namo-R1/
 
 ## Status
 
