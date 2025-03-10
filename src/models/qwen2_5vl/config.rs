@@ -2,9 +2,9 @@
 
 use mistralrs_quant::QuantizedConfig;
 
-use crate::layers::Activation;
+use mistralrs_core::layers::Activation;
 
-use crate::serde_default_fn;
+use mistralrs_core::serde_default_fn;
 
 serde_default_fn!(Activation, default_vision_hidden_act, Activation::QuickGelu);
 serde_default_fn!(usize, default_in_channels, 3);

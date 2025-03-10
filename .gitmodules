@@ -1,3 +1,3 @@
 [submodule "mistral.rs"]
 	path = mistral.rs
-	url = https://github.com/EricLBuehler/mistral.rs
+	url = https://github.com/MonolithFoundation/mistral.rs

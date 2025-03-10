@@ -1,3 +1,8 @@
+use mistralrs::{Loader, VisionLoaderBuilder, VisionLoaderType, VisionSpecificConfig};
+use tokio::sync::RwLock;
+
+use crate::vision_model::CustomVisionModelBuilder;
+
 pub struct CustomVisionLoaderBuilder(VisionLoaderBuilder);
 
 impl CustomVisionLoaderBuilder {
@@ -15,17 +20,22 @@ impl CustomVisionLoaderBuilder {
         ))
     }
 
-    // 自定义 build 方法
     pub fn build(self, loader: VisionLoaderType) -> Box<dyn Loader> {
-        // 可在这里添加预处理逻辑
-        println!("Custom build process starting...");
-        
-        // 调用原有 build 方法
-        let mut original = self.0.build(loader);
-        
-        // 可在这里添加后处理逻辑
-        // 例如：original.set_some_property(...)
-        
-        original
+        let loader: Box<dyn CustomVisionModelLoader> = match loader {
+            VisionLoaderType::Phi4MM => Box::new(Phi4MMLoader),
+        };
+        Box::new(VisionLoader {
+            inner: loader,
+            model_id: self.model_id.unwrap(),
+            config: self.config,
+            kind: self.kind,
+            chat_template: self.chat_template,
+            tokenizer_json: self.tokenizer_json,
+            xlora_model_id: None,
+            xlora_order: None,
+            token_source: RwLock::new(None),
+            revision: RwLock::new(None),
+            from_uqff: RwLock::new(None),
+        })
     }
 }

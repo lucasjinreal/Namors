@@ -7,13 +7,16 @@ use std::{
 use anyhow::Result;
 use candle_core::{Context, Device, IndexOp, Tensor};
 use image::{imageops::FilterType, DynamicImage, GenericImageView};
+use mistralrs::vision_models::{
+    image_processor::PreprocessedImages, preprocessor_config::PreProcessorConfig,
+};
 use mistralrs_vision::{
     ApplyTensorTransforms, ApplyTransforms, Normalize, TensorTransforms, ToTensor, Transforms,
 };
 use tokenizers::Tokenizer;
 use tracing::warn;
 
-use crate::{
+use mistralrs_core::{
     device_map::DeviceMapper,
     pipeline::{
         text_models_inputs_processor::{
@@ -23,9 +26,7 @@ use crate::{
     },
     sequence::Sequence,
     vision_models::{
-        image_processor::{ImagePreProcessor, PreprocessedImages},
-        preprocessor_config::{PreProcessorConfig, ToFilter},
-        ModelInputs,
+        image_processor::ImagePreProcessor, preprocessor_config::ToFilter, ModelInputs,
     },
 };
 

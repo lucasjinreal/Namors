@@ -1,3 +1,5 @@
+use mistralrs::{Loader, VisionLoaderType, VisionModelBuilder};
+
 pub struct CustomVisionModelBuilder(VisionModelBuilder);
 
 impl CustomVisionModelBuilder {
@@ -26,17 +28,7 @@ impl CustomVisionModelBuilder {
         }
     }
 
-    // 自定义 build 方法
     pub fn build(self, loader: VisionLoaderType) -> Box<dyn Loader> {
-        // 可在这里添加预处理逻辑
         println!("Custom build process starting...");
-
-        // 调用原有 build 方法
-        let mut original = self.0.build(loader);
-
-        // 可在这里添加后处理逻辑
-        // 例如：original.set_some_property(...)
-
-        original
     }
 }

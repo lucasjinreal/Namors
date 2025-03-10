@@ -6,19 +6,21 @@ use mistralrs_quant::{
     ColumnParallelLayer, QuantMethod, ReplicatedLayer, RowParallelLayer, ShardedVarBuilder,
 };
 
-use crate::{
+use mistralrs_core::{
     attention::SdpaParams,
     device_map::DeviceMapper,
     layers::{self, Activation, F32RmsNorm, Qwen2VLRotaryEmbedding, Sdpa},
     paged_attention::{AttentionImplementation, ModelConfigMetadata},
     pipeline::{
-        extract_logits, text_models_inputs_processor::FlashParams, EitherCache, IsqModel, KvCache,
-        NormalCache, NormalLoadingMetadata,
+        text_models_inputs_processor::FlashParams, EitherCache, IsqModel, KvCache, NormalCache,
+        NormalLoadingMetadata,
     },
-    utils::{progress::NiceProgressBar, unvarbuilder::UnVarBuilder},
 };
 
 use super::config::Config;
+use crate::models::extract_logits;
+use crate::models::utils::progress::NiceProgressBar;
+use crate::models::utils::unvarbuilder::UnVarBuilder;
 
 struct Mlp {
     gate_proj: Arc<dyn QuantMethod>,

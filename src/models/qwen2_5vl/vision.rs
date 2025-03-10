@@ -4,10 +4,7 @@ use candle_core::{DType, Device, IndexOp, Result, Tensor, D};
 use candle_nn::{LayerNorm, Linear, Module};
 use mistralrs_quant::{QuantMethod, ShardedVarBuilder};
 
-use crate::{
-    layers::{self, layer_norm, Activation, Conv3dConfig, Conv3dNoBias, MatMul},
-    ops::RepeatInterleaveOp,
-};
+use mistralrs_core::layers::{self, layer_norm, Activation, Conv3dConfig, Conv3dNoBias, MatMul};
 
 use super::config::VisionConfig;
 

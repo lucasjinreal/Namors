@@ -1,10 +1,12 @@
+mod pipeline;
+mod models;
+
 use anyhow::Result;
 use mistralrs::{IsqType, TextMessageRole, VisionMessages};
 
-const MODEL_ID: &str = "checkpoints/Qwen2.5-VL-3B-Instruct";
-
 use pipeline::vision::CustomVisionLoaderBuilder;
 
+const MODEL_ID: &str = "checkpoints/Qwen2.5-VL-3B-Instruct";
 
 #[tokio::main]
 async fn main() -> Result<()> {

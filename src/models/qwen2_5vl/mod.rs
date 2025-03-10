@@ -7,16 +7,16 @@ use mistralrs_quant::{QuantMethod, ShardedVarBuilder};
 use text::Qwen2VLTextModel;
 use vision::Qwen2VLVisionModel;
 
-use crate::{
+use mistralrs_core::pipeline::{
+    text_models_inputs_processor::{FlashParams, PagedAttentionInputMetadata},
+    EitherCache, IsqModel, NormalLoadingMetadata, VisionModel,
+};
+use mistralrs_core::{
     amoe::AnyMoeBaseModelMixin,
     device_map::DeviceMapper,
     layers::CausalMasker,
     layers_masker::{masked_fill, PastKvLenCache},
     paged_attention::{AttentionImplementation, ModelConfigMetadata},
-    pipeline::{
-        text_models_inputs_processor::{FlashParams, PagedAttentionInputMetadata},
-        EitherCache, IsqModel, NormalLoadingMetadata, VisionModel,
-    },
 };
 
 mod config;
@@ -25,7 +25,6 @@ mod text;
 mod vision;
 
 pub(crate) use config::Config;
-pub(crate) use inputs_processor::Qwen2VLProcessor;
 
 pub struct Qwen2VLModel {
     text: Qwen2VLTextModel,
