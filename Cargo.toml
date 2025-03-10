@@ -4,3 +4,20 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.97"
+mistralrs-core = { version = "0.4.0", path = "./mistral.rs/mistralrs-core" }
+mistralrs = { version = "0.4.0", path = "./mistral.rs/mistralrs" }
+
+rand = "0.9.0"
+reqwest = "0.12.12"
+tokio = "1.44.0"
+image = { version = "0.25.1", default-features = false, features = ['bmp', 'dds', 'exr', 'ff', 'gif', 'hdr', 'ico', 'jpeg', 'png', 'pnm', 'qoi', 'tga', 'tiff', 'webp']}
+
+[features]
+cuda = ["mistralrs-core/cuda"]
+cudnn = ["mistralrs-core/cudnn"]
+metal = ["mistralrs-core/metal"]
+flash-attn = ["cuda", "mistralrs-core/flash-attn"]
+accelerate = ["mistralrs-core/accelerate"]
+mkl = ["mistralrs-core/mkl"]
+nccl = ["mistralrs-core/nccl"]
