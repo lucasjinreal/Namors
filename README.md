@@ -6,7 +6,7 @@ Namors is a native Rust portable MLLM inference framework, our ultimate goal is 
 
 Our goal is to make Namors focus on:
 
-- Candle as the engine core (computation, tensor etc);
+- Candle & mistral.rs as the engine core (computation, tensor etc);
 - Optimizations on Small models, written in pure fast Rust;
 - VLMs and Omni model is our goal, helpfully we can using Rust deploy MLLMs simply;
 - Quantization, we would explore many ways to run int8 or int4 for fastest inference.
@@ -19,16 +19,12 @@ The first goal would be inference Namo-R1 in pure Rust: https://github.com/lucas
 - [ ] Namo-R1-v1 (50%);
 - [ ] Spark-TTS;
 
-
-
 If you want adding new LLM based model portable inference, create an issue and start & fork our repo!
-
 
 ## Updates
 
 - `2025-03-11`: 🔥🔥 Runing Qwen2.5-VL initially supported in Namors based on mistral.rs! Namo model are under going;
 - `2025-03-01`: The repo created.
-
 
 ## QuickStart
 
@@ -49,7 +45,6 @@ Then run:
 You can run the model directly. The main code suppose you have model under `checkpoints/Qwen2.5-VL-3B-Instruct`.
 
 You can set your model downloaded path at `main.rs`
-
 
 ## Inference Engine
 
