@@ -1,16 +1,14 @@
-mod pipeline;
 mod models;
+mod pipeline;
 
 use anyhow::Result;
 use mistralrs::{IsqType, TextMessageRole, VisionLoaderType, VisionMessages, VisionModelBuilder};
 use pipeline::vision_model::VisionModelBuilderExt;
 
-
 const MODEL_ID: &str = "checkpoints/Qwen2.5-VL-3B-Instruct";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
     // this actually called qwen2.5 vl
     let model = VisionModelBuilder::new(MODEL_ID, VisionLoaderType::Qwen2VL)
         .with_isq(IsqType::Q4K)
@@ -25,6 +23,7 @@ async fn main() -> Result<()> {
         Err(e) => anyhow::bail!(e),
     };
     let image = image::load_from_memory(&bytes)?;
+    println!("image loaded.");
 
     let messages = VisionMessages::new().add_image_message(
         TextMessageRole::User,

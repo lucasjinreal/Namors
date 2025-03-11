@@ -10,6 +10,7 @@ use image::{imageops::FilterType, DynamicImage, GenericImageView};
 use mistralrs::vision_models::{
     image_processor::PreprocessedImages, preprocessor_config::PreProcessorConfig,
 };
+use mistralrs_quant::set_use_matmul_via_f16;
 use mistralrs_vision::{
     ApplyTensorTransforms, ApplyTransforms, Normalize, TensorTransforms, ToTensor, Transforms,
 };
@@ -30,20 +31,22 @@ use mistralrs_core::{
     },
 };
 
-use super::Qwen2VLVisionSpecificArgs;
+use super::Qwen2_5VLVisionSpecificArgs;
 
 // Input processor
-struct Qwen2VLImageProcessor {
+
+// Input processor
+struct Qwen2_5VLImageProcessor {
     // To represent uninitialized, we do this. Should always be init by the time this is read.
     merge_size: RwLock<Option<usize>>,
     max_edge: Option<u32>,
 }
 // Processor
-pub struct Qwen2VLProcessor {
+pub struct Qwen2_5VLProcessor {
     max_edge: Option<u32>,
 }
 
-impl Qwen2VLProcessor {
+impl Qwen2_5VLProcessor {
     pub const VISION_START: &str = "<|vision_start|>";
     pub const VISION_END: &str = "<|vision_end|>";
     pub const IMAGE_PAD: &str = "<|image_pad|>";
@@ -55,9 +58,9 @@ impl Qwen2VLProcessor {
     }
 }
 
-impl Processor for Qwen2VLProcessor {
+impl Processor for Qwen2_5VLProcessor {
     fn inputs_processor(&self) -> Arc<dyn InputsProcessor> {
-        Arc::new(Qwen2VLImageProcessor {
+        Arc::new(Qwen2_5VLImageProcessor {
             merge_size: RwLock::new(None),
             max_edge: self.max_edge,
         })
@@ -118,7 +121,7 @@ fn find_substring_indices(haystack: &str, needle: &str) -> Vec<usize> {
     indices
 }
 
-impl InputsProcessor for Qwen2VLImageProcessor {
+impl InputsProcessor for Qwen2_5VLImageProcessor {
     fn get_type(&self) -> InputsProcessorType {
         InputsProcessorType::Vision
     }
@@ -162,53 +165,6 @@ impl InputsProcessor for Qwen2VLImageProcessor {
             ))));
         };
 
-        let text_models_inputs_processor::InnerInputProcessorOutput {
-            inputs:
-                text_models_inputs_processor::InputMetadata {
-                    input,
-                    positions,
-                    context_lens,
-                    position_ids,
-                    paged_attn_meta,
-                    flash_meta,
-                },
-            seq_indices,
-        } = if is_prompt {
-            get_prompt_input(
-                input_seqs
-                    .iter()
-                    .map(|seq| seq.get_toks().to_vec())
-                    .collect::<Vec<_>>(),
-                input_seqs,
-                device,
-                last_n_context_len,
-                return_raw_logits,
-                paged_attn_metadata.as_mut(),
-                None, // TODO: evaluate if it is possible to batch this
-                mapper,
-            )
-            .nth(0)
-            .unwrap()
-            .unwrap()
-        } else {
-            get_completion_input(
-                input_seqs
-                    .iter()
-                    .map(|seq| seq.get_toks().to_vec())
-                    .collect::<Vec<_>>(),
-                input_seqs,
-                device,
-                no_kv_cache,
-                last_n_context_len,
-                return_raw_logits,
-                paged_attn_metadata.as_mut(),
-                None, // TODO: evaluate if it is possible to batch this
-                mapper,
-            )
-            .nth(0)
-            .unwrap()
-            .unwrap()
-        };
         let config = other_config.expect("Need a PreProcessorConfig config.");
         let config: &PreProcessorConfig = config.downcast_ref().expect("Downcast failed.");
 
@@ -314,11 +270,11 @@ impl InputsProcessor for Qwen2VLImageProcessor {
                     let merge_length = self.merge_size.read().unwrap().unwrap().pow(2);
                     let mut index = 0;
                     for (batch, text) in detok_seqs.iter_mut().enumerate() {
-                        while text.contains(Qwen2VLProcessor::IMAGE_PAD) {
+                        while text.contains(Qwen2_5VLProcessor::IMAGE_PAD) {
                             *text = replace_first_occurrence(
                                 text,
-                                Qwen2VLProcessor::IMAGE_PAD,
-                                &Qwen2VLProcessor::PLACEHOLDER.repeat(
+                                Qwen2_5VLProcessor::IMAGE_PAD,
+                                &Qwen2_5VLProcessor::PLACEHOLDER.repeat(
                                     image_grid_thw_accum[batch]
                                         .i(index)
                                         .unwrap()
@@ -332,8 +288,10 @@ impl InputsProcessor for Qwen2VLImageProcessor {
                             );
                             index += 1;
                         }
-                        *text = text
-                            .replace(Qwen2VLProcessor::PLACEHOLDER, Qwen2VLProcessor::IMAGE_PAD);
+                        *text = text.replace(
+                            Qwen2_5VLProcessor::PLACEHOLDER,
+                            Qwen2_5VLProcessor::IMAGE_PAD,
+                        );
                     }
                 }
 
@@ -341,11 +299,11 @@ impl InputsProcessor for Qwen2VLImageProcessor {
                     let merge_length = self.merge_size.read().unwrap().unwrap().pow(2);
                     let mut index = 0;
                     for (batch, text) in detok_seqs.iter_mut().enumerate() {
-                        while text.contains(Qwen2VLProcessor::VIDEO_PAD) {
+                        while text.contains(Qwen2_5VLProcessor::VIDEO_PAD) {
                             *text = replace_first_occurrence(
                                 text,
-                                Qwen2VLProcessor::VIDEO_PAD,
-                                &Qwen2VLProcessor::PLACEHOLDER.repeat(
+                                Qwen2_5VLProcessor::VIDEO_PAD,
+                                &Qwen2_5VLProcessor::PLACEHOLDER.repeat(
                                     video_grid_thw_accum[batch]
                                         .i(index)
                                         .unwrap()
@@ -359,8 +317,10 @@ impl InputsProcessor for Qwen2VLImageProcessor {
                             );
                             index += 1;
                         }
-                        *text = text
-                            .replace(Qwen2VLProcessor::PLACEHOLDER, Qwen2VLProcessor::VIDEO_PAD);
+                        *text = text.replace(
+                            Qwen2_5VLProcessor::PLACEHOLDER,
+                            Qwen2_5VLProcessor::VIDEO_PAD,
+                        );
                     }
                 }
             }
@@ -379,7 +339,7 @@ impl InputsProcessor for Qwen2VLImageProcessor {
                 all_ids.push(ids.clone());
 
                 let img_pad = tokenizer
-                    .encode(Qwen2VLProcessor::IMAGE_PAD, false)
+                    .encode(Qwen2_5VLProcessor::IMAGE_PAD, false)
                     .expect("Detokenization failed!")
                     .get_ids()
                     .to_vec();
@@ -387,7 +347,7 @@ impl InputsProcessor for Qwen2VLImageProcessor {
                 all_continuous_img_pad.push(continuous_img_pad);
 
                 let vid_pad = tokenizer
-                    .encode(Qwen2VLProcessor::VIDEO_PAD, false)
+                    .encode(Qwen2_5VLProcessor::VIDEO_PAD, false)
                     .expect("Detokenization failed!")
                     .get_ids()
                     .to_vec();
@@ -395,12 +355,6 @@ impl InputsProcessor for Qwen2VLImageProcessor {
                 all_continuous_vid_pad.push(continuous_vid_pad);
 
                 seq.set_toks(ids);
-
-                if let Some(ref mut metadata) = paged_attn_metadata {
-                    // Free and then reallocate as appropriate
-                    metadata.block_engine.free_sequence(*seq.id());
-                    metadata.block_engine.allocate(*seq);
-                }
             }
 
             let mut input_ids_searching = Vec::new();
@@ -408,13 +362,14 @@ impl InputsProcessor for Qwen2VLImageProcessor {
             let mut video_nums = Vec::new();
             for seq in input_seqs.iter() {
                 let prompt = seq.get_initial_prompt();
-                let match_indices = find_substring_indices(prompt, Qwen2VLProcessor::VISION_START);
+                let match_indices =
+                    find_substring_indices(prompt, Qwen2_5VLProcessor::VISION_START);
                 image_nums.push(
                     match_indices
                         .iter()
                         .filter(|&&idx| {
-                            prompt[idx..idx + Qwen2VLProcessor::IMAGE_PAD.len()]
-                                == *Qwen2VLProcessor::IMAGE_PAD
+                            prompt[idx..idx + Qwen2_5VLProcessor::IMAGE_PAD.len()]
+                                == *Qwen2_5VLProcessor::IMAGE_PAD
                         })
                         .count(),
                 );
@@ -422,8 +377,8 @@ impl InputsProcessor for Qwen2VLImageProcessor {
                     match_indices
                         .iter()
                         .filter(|&&idx| {
-                            prompt[idx..idx + Qwen2VLProcessor::VIDEO_PAD.len()]
-                                == *Qwen2VLProcessor::VIDEO_PAD
+                            prompt[idx..idx + Qwen2_5VLProcessor::VIDEO_PAD.len()]
+                                == *Qwen2_5VLProcessor::VIDEO_PAD
                         })
                         .count(),
                 );
@@ -439,8 +394,7 @@ impl InputsProcessor for Qwen2VLImageProcessor {
             let max_len = all_ids.iter().map(|ids| ids.len()).max().unwrap();
             for ids in all_ids {
                 let pad = max_len - ids.len();
-                all_ids_new
-                    .push(Tensor::new([ids, vec![0; pad]].concat(), input.device()).unwrap());
+                all_ids_new.push(Tensor::new([ids, vec![0; pad]].concat(), device).unwrap());
             }
 
             (
@@ -468,6 +422,60 @@ impl InputsProcessor for Qwen2VLImageProcessor {
             )
         };
 
+        let text_models_inputs_processor::InnerInputProcessorOutput {
+            inputs:
+                text_models_inputs_processor::InputMetadata {
+                    input,
+                    positions,
+                    context_lens,
+                    position_ids,
+                    paged_attn_meta,
+                    flash_meta,
+                },
+            seq_indices,
+        } = if is_prompt {
+            get_prompt_input(
+                input_seqs
+                    .iter()
+                    .map(|seq| seq.get_toks().to_vec())
+                    .collect::<Vec<_>>(),
+                input_seqs,
+                device,
+                last_n_context_len,
+                return_raw_logits,
+                paged_attn_metadata.as_mut(),
+                None, // TODO: evaluate if it is possible to batch this
+                mapper,
+            )
+            .nth(0)
+            .unwrap()
+            .unwrap()
+        } else {
+            get_completion_input(
+                input_seqs
+                    .iter()
+                    .map(|seq| seq.get_toks().to_vec())
+                    .collect::<Vec<_>>(),
+                input_seqs,
+                device,
+                no_kv_cache,
+                last_n_context_len,
+                return_raw_logits,
+                paged_attn_metadata.as_mut(),
+                None, // TODO: evaluate if it is possible to batch this
+                mapper,
+            )
+            .nth(0)
+            .unwrap()
+            .unwrap()
+        };
+
+        // todo: set_use_matmul_via_f16(true) from "pipline/inputs_processor" cause a significant loss of precision.
+        // It’s hard to figure it out during subsequent debugging
+        // Anyhow, globally setting matnuml precision MAY not be a ideal solution.
+        // For now, change the precision back
+        set_use_matmul_via_f16(false);
+
         let (input, input_ids_full) = match (new_input, is_prompt) {
             (Some(new_input), true) => (new_input.clone(), new_input),
             (Some(new_input), false) => (input, new_input),
@@ -487,7 +495,7 @@ impl InputsProcessor for Qwen2VLImageProcessor {
             context_lens,
             position_ids,
             pixel_values,
-            model_specific_args: Box::new(Qwen2VLVisionSpecificArgs {
+            model_specific_args: Box::new(Qwen2_5VLVisionSpecificArgs {
                 input_ids_full,
                 image_grid_thw,
                 video_grid_thw,
@@ -508,7 +516,7 @@ impl InputsProcessor for Qwen2VLImageProcessor {
     }
 }
 
-impl Qwen2VLImageProcessor {
+impl Qwen2_5VLImageProcessor {
     fn smart_resize(
         &self,
         height: usize,
@@ -645,7 +653,7 @@ impl Qwen2VLImageProcessor {
     }
 }
 
-impl ImagePreProcessor for Qwen2VLImageProcessor {
+impl ImagePreProcessor for Qwen2_5VLImageProcessor {
     const DEFAULT_MEAN: [f64; 3] = [0.48145466, 0.4578275, 0.40821073];
     const DEFAULT_STD: [f64; 3] = [0.26862954, 0.26130258, 0.27577711];
 

@@ -2,7 +2,7 @@ use std::sync::RwLock;
 
 use mistralrs::{pipeline::VisionModelLoader, Loader, VisionLoader, VisionLoaderBuilder};
 
-use crate::models::vision_loaders::Qwen25VLLoader;
+use crate::models::vision_loaders::Qwen2_5VLLoader;
 
 pub trait VisionLoaderBuilderExt {
     fn build_custom(self) -> Box<dyn Loader>;
@@ -10,7 +10,7 @@ pub trait VisionLoaderBuilderExt {
 
 impl VisionLoaderBuilderExt for VisionLoaderBuilder {
     fn build_custom(self) -> Box<dyn Loader> {
-        let loader: Box<dyn VisionModelLoader> = Box::new(Qwen25VLLoader);
+        let loader: Box<dyn VisionModelLoader> = Box::new(Qwen2_5VLLoader);
 
         Box::new(VisionLoader {
             inner: loader,

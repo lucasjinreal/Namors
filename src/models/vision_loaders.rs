@@ -15,9 +15,9 @@ use mistralrs_quant::ShardedVarBuilder;
 use regex::Regex;
 use std::fmt::Debug;
 
-use crate::models::qwen2_5vl::inputs_processor::Qwen2VLProcessor;
-use crate::models::qwen2_5vl::Config as Qwen2VLConfig;
-use crate::models::qwen2_5vl::Qwen2VLModel;
+use crate::models::qwen2_5vl::inputs_processor::Qwen2_5VLProcessor;
+use crate::models::qwen2_5vl::Config as Qwen2_5VLConfig;
+use crate::models::qwen2_5vl::Qwen2_5VLModel;
 
 macro_rules! bias_if {
     ($cond:expr, $size:expr) => {
@@ -31,22 +31,22 @@ macro_rules! bias_if {
 
 // ======================== Qwen25VL Loader
 
-pub struct Qwen25VLLoader;
+pub struct Qwen2_5VLLoader;
 
-pub struct Qwen25VLPrefixer;
+pub struct Qwen2_5VLPrefixer;
 
-impl VisionPromptPrefixer for Qwen25VLPrefixer {
+impl VisionPromptPrefixer for Qwen2_5VLPrefixer {
     fn prefix_image(&self, _image_index: usize, prompt: &str) -> String {
         format!(
             "{}{}{}{prompt}",
-            Qwen2VLProcessor::VISION_START,
-            Qwen2VLProcessor::IMAGE_PAD,
-            Qwen2VLProcessor::VISION_END
+            Qwen2_5VLProcessor::VISION_START,
+            Qwen2_5VLProcessor::IMAGE_PAD,
+            Qwen2_5VLProcessor::VISION_END
         )
     }
 }
 
-impl VisionModelLoader for Qwen25VLLoader {
+impl VisionModelLoader for Qwen2_5VLLoader {
     fn load(
         &self,
         config: &str,
@@ -55,8 +55,8 @@ impl VisionModelLoader for Qwen25VLLoader {
         normal_loading_metadata: NormalLoadingMetadata,
         attention_mechanism: AttentionImplementation,
     ) -> Result<Box<dyn VisionModel + Send + Sync>> {
-        let config: Qwen2VLConfig = serde_json::from_str(config)?;
-        Ok(Box::new(Qwen2VLModel::new(
+        let config: Qwen2_5VLConfig = serde_json::from_str(config)?;
+        Ok(Box::new(Qwen2_5VLModel::new(
             &config,
             vb,
             self.is_gptx(),
@@ -68,7 +68,7 @@ impl VisionModelLoader for Qwen25VLLoader {
         true
     }
     fn get_config_repr(&self, config: &str, _use_flash_attn: bool) -> Result<Box<dyn Debug>> {
-        let config: Qwen2VLConfig = serde_json::from_str(config)?;
+        let config: Qwen2_5VLConfig = serde_json::from_str(config)?;
         Ok(Box::new(config))
     }
     fn get_processor(
@@ -78,10 +78,10 @@ impl VisionModelLoader for Qwen25VLLoader {
         _preprocessor_config: PreProcessorConfig,
         max_edge: Option<u32>,
     ) -> Arc<dyn Processor + Send + Sync> {
-        Arc::new(Qwen2VLProcessor::new(max_edge))
+        Arc::new(Qwen2_5VLProcessor::new(max_edge))
     }
     fn get_total_device_mapping_num_layers(&self, config: &str) -> Result<usize> {
-        let config: Qwen2VLConfig = serde_json::from_str(config)?;
+        let config: Qwen2_5VLConfig = serde_json::from_str(config)?;
         // We only apply device mapping to text model
         Ok(config.num_hidden_layers)
     }
@@ -89,11 +89,11 @@ impl VisionModelLoader for Qwen25VLLoader {
         false
     }
     fn prefixer(&self) -> Arc<dyn VisionPromptPrefixer> {
-        Arc::new(Qwen25VLPrefixer)
+        Arc::new(Qwen2_5VLPrefixer)
     }
 }
 
-impl IsqModelLoader for Qwen25VLLoader {
+impl IsqModelLoader for Qwen2_5VLLoader {
     fn isq_layer_regexes(&self, _config: &str) -> Result<Vec<Regex>> {
         Ok(vec![
             Regex::new(r"lm_head\.(weight|bias)$")?,
@@ -110,7 +110,7 @@ impl IsqModelLoader for Qwen25VLLoader {
     }
 }
 
-impl DeviceMappedModelLoader for Qwen25VLLoader {
+impl DeviceMappedModelLoader for Qwen2_5VLLoader {
     fn mapped_max_act_size_elems(
         &self,
         config: &str,
@@ -127,7 +127,7 @@ impl DeviceMappedModelLoader for Qwen25VLLoader {
             anyhow::bail!("Expected vision AutoDeviceMapParams for this model!")
         };
 
-        let cfg: Qwen2VLConfig = serde_json::from_str(config)?;
+        let cfg: Qwen2_5VLConfig = serde_json::from_str(config)?;
 
         let img_seq_len = {
             let cfg = &cfg.vision_config;
@@ -162,7 +162,7 @@ impl DeviceMappedModelLoader for Qwen25VLLoader {
             anyhow::bail!("Expected vision AutoDeviceMapParams for this model!")
         };
 
-        let cfg: Qwen2VLConfig = serde_json::from_str(config)?;
+        let cfg: Qwen2_5VLConfig = serde_json::from_str(config)?;
 
         let img_seq_len = {
             let cfg = &cfg.vision_config;
@@ -186,7 +186,7 @@ impl DeviceMappedModelLoader for Qwen25VLLoader {
         dtype: DType,
         weight_pack_factor: usize,
     ) -> Result<usize> {
-        let cfg: Qwen2VLConfig = serde_json::from_str(config)?;
+        let cfg: Qwen2_5VLConfig = serde_json::from_str(config)?;
         let text_elems = {
             let embed_tokens = cfg.hidden_size * cfg.vocab_size / weight_pack_factor;
             let lm_head = if !cfg.tie_word_embeddings {
@@ -200,12 +200,12 @@ impl DeviceMappedModelLoader for Qwen25VLLoader {
 
         let patch_merger = {
             let cfg = &cfg.vision_config;
-            let hidden_size = cfg.embed_dim * cfg.spatial_merge_size.pow(2);
+            let hidden_size = cfg.hidden_size * cfg.spatial_merge_size.pow(2);
 
             let mlp0 = hidden_size * hidden_size + hidden_size;
             let mlp2 = hidden_size * cfg.hidden_size + cfg.hidden_size;
 
-            let ln_q = cfg.embed_dim + bias_if!(true, cfg.embed_dim);
+            let ln_q = cfg.hidden_size + bias_if!(true, cfg.hidden_size);
 
             mlp0 + mlp2 + ln_q
         };
@@ -217,7 +217,7 @@ impl DeviceMappedModelLoader for Qwen25VLLoader {
                 ..Default::default()
             };
             let kernel_sizes = [cfg.temporal_patch_size, cfg.patch_size, cfg.patch_size];
-            cfg.in_channels * cfg.embed_dim / conv_cfg.groups
+            cfg.in_chans * cfg.hidden_size / conv_cfg.groups
                 * kernel_sizes[0]
                 * kernel_sizes[1]
                 * kernel_sizes[2]
@@ -225,16 +225,15 @@ impl DeviceMappedModelLoader for Qwen25VLLoader {
 
         let encoder_layer = {
             let cfg = &cfg.vision_config;
-            let norm1 = cfg.embed_dim + bias_if!(true, cfg.embed_dim);
-            let norm2 = cfg.embed_dim + bias_if!(true, cfg.embed_dim);
+            let norm1 = cfg.hidden_size + bias_if!(true, cfg.hidden_size);
+            let norm2 = cfg.hidden_size + bias_if!(true, cfg.hidden_size);
 
             #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
-            let mlp_hidden_dim = (cfg.embed_dim as f64 * cfg.mlp_ratio) as usize;
-            let fc1 = cfg.embed_dim * mlp_hidden_dim + mlp_hidden_dim;
-            let fc2 = cfg.embed_dim * mlp_hidden_dim + cfg.embed_dim;
+            let fc1 = cfg.hidden_size * cfg.intermediate_size + cfg.intermediate_size;
+            let fc2 = cfg.hidden_size * cfg.intermediate_size + cfg.hidden_size;
 
-            let qkv = cfg.embed_dim * cfg.embed_dim * 3 + cfg.embed_dim * 3;
-            let out = cfg.embed_dim * cfg.embed_dim + cfg.embed_dim;
+            let qkv = cfg.hidden_size * cfg.hidden_size * 3 + cfg.hidden_size * 3;
+            let out = cfg.hidden_size * cfg.hidden_size + cfg.hidden_size;
 
             norm1 + norm2 + fc1 + fc2 + qkv + out
         };
@@ -251,7 +250,7 @@ impl DeviceMappedModelLoader for Qwen25VLLoader {
         dtype: DType,
         weight_pack_factor: usize,
     ) -> Result<Vec<usize>> {
-        let cfg: Qwen2VLConfig = serde_json::from_str(config)?;
+        let cfg: Qwen2_5VLConfig = serde_json::from_str(config)?;
         let per_layer_elems = {
             let input_layernorm = cfg.hidden_size;
             let post_attention_layernorm = cfg.hidden_size;
@@ -287,12 +286,12 @@ impl DeviceMappedModelLoader for Qwen25VLLoader {
     }
 
     fn num_layers(&self, config: &str) -> Result<usize> {
-        let cfg: Qwen2VLConfig = serde_json::from_str(config)?;
+        let cfg: Qwen2_5VLConfig = serde_json::from_str(config)?;
         Ok(cfg.num_hidden_layers)
     }
 
     fn model_config(&self, config: &str) -> Result<Box<dyn ModelConfigLike>> {
-        let cfg: Qwen2VLConfig = serde_json::from_str(config)?;
+        let cfg: Qwen2_5VLConfig = serde_json::from_str(config)?;
 
         let cfg = ModelConfigMetadata {
             max_seq_len: cfg.max_position_embeddings,

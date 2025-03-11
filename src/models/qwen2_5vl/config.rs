@@ -12,17 +12,19 @@ serde_default_fn!(usize, default_in_channels, 3);
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct VisionConfig {
     pub depth: usize,
-    pub embed_dim: usize,
     pub hidden_size: usize,
+    pub out_hidden_size: usize,
     #[serde(default = "default_vision_hidden_act")]
     pub hidden_act: Activation,
-    pub mlp_ratio: f64,
+    pub intermediate_size: usize,
     pub num_heads: usize,
     #[serde(default = "default_in_channels")]
-    pub in_channels: usize,
+    pub in_chans: usize,
     pub patch_size: usize,
     pub spatial_merge_size: usize,
     pub temporal_patch_size: usize,
+    pub window_size: usize,
+    pub fullatt_block_indexes: Vec<usize>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
