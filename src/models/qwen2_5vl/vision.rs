@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use candle_core::{DType, Device, IndexOp, Result, Tensor, D};
-use candle_nn::{LayerNorm, Linear, Module};
+use candle_nn::{Linear, Module};
 use mistralrs::layers::RmsNorm;
 use mistralrs_quant::{QuantMethod, ShardedVarBuilder};
 
 use super::config::VisionConfig;
-use mistralrs_core::layers::{self, layer_norm, Activation, Conv3dConfig, Conv3dNoBias, MatMul};
+use mistralrs_core::layers::{self, Activation, Conv3dConfig, Conv3dNoBias, MatMul};
 use mistralrs_core::ops::RepeatInterleaveOp;
 
 struct PatchEmbed {

@@ -1,8 +1,13 @@
 mod models;
 mod pipeline;
 
+use std::io::Write;
+
 use anyhow::Result;
-use mistralrs::{IsqType, TextMessageRole, VisionLoaderType, VisionMessages, VisionModelBuilder};
+use mistralrs::{
+    ChatCompletionChunkResponse, ChunkChoice, Delta, Response, TextMessageRole, VisionLoaderType,
+    VisionMessages, VisionModelBuilder,
+};
 use pipeline::vision_model::VisionModelBuilderExt;
 
 const MODEL_ID: &str = "checkpoints/Qwen2.5-VL-3B-Instruct";
@@ -11,7 +16,7 @@ const MODEL_ID: &str = "checkpoints/Qwen2.5-VL-3B-Instruct";
 async fn main() -> Result<()> {
     // this actually called qwen2.5 vl
     let model = VisionModelBuilder::new(MODEL_ID, VisionLoaderType::Qwen2VL)
-        .with_isq(IsqType::Q4K)
+        // .with_isq(IsqType::Q4K)
         .with_logging()
         .build_custom()
         .await?;
@@ -32,13 +37,36 @@ async fn main() -> Result<()> {
         &model,
     )?;
 
-    let response = model.send_chat_request(messages).await?;
+    // no-stream mode
+    // let response = model.send_chat_request(messages).await?;
+    // println!("{}", response.choices[0].message.content.as_ref().unwrap());
+    // dbg!(
+    //     response.usage.avg_prompt_tok_per_sec,
+    //     response.usage.avg_compl_tok_per_sec
+    // );
 
-    println!("{}", response.choices[0].message.content.as_ref().unwrap());
-    dbg!(
-        response.usage.avg_prompt_tok_per_sec,
-        response.usage.avg_compl_tok_per_sec
-    );
+    let mut stream = model.stream_chat_request(messages).await?;
+    let stdout = std::io::stdout();
+    let mut lock = stdout.lock();
+    while let Some(chunk) = stream.next().await {
+        if let Response::Chunk(ChatCompletionChunkResponse { choices, .. }) = chunk {
+            if let Some(ChunkChoice {
+                delta:
+                    Delta {
+                        content: Some(content),
+                        ..
+                    },
+                ..
+            }) = choices.first()
+            {
+                lock.write_all(content.as_bytes())?;
+                lock.flush()?;
+            };
+        } else {
+            // Handle errors
+        }
+    }
+    println!("\ndone");
 
     Ok(())
 }

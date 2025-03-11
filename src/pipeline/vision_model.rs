@@ -1,7 +1,7 @@
 use mistralrs::{
     best_device, initialize_logging, AutoDeviceMapParams, DefaultSchedulerMethod, DeviceMapSetting,
-    Loader, MistralRsBuilder, Model, SchedulerConfig, VisionLoaderBuilder, VisionLoaderType,
-    VisionModelBuilder, VisionSpecificConfig,
+    MistralRsBuilder, Model, SchedulerConfig, VisionLoaderBuilder, VisionModelBuilder,
+    VisionSpecificConfig,
 };
 
 use super::vision::VisionLoaderBuilderExt;
