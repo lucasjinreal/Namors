@@ -19,10 +19,10 @@ use mistralrs_core::{
     paged_attention::{AttentionImplementation, ModelConfigMetadata},
 };
 
-mod config;
-mod inputs_processor;
-mod text;
-mod vision;
+pub mod config;
+pub mod inputs_processor;
+pub mod text;
+pub mod vision;
 
 pub(crate) use config::Config;
 

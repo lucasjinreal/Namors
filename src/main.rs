@@ -2,18 +2,20 @@ mod pipeline;
 mod models;
 
 use anyhow::Result;
-use mistralrs::{IsqType, TextMessageRole, VisionMessages};
+use mistralrs::{IsqType, TextMessageRole, VisionLoaderType, VisionMessages, VisionModelBuilder};
+use pipeline::vision_model::VisionModelBuilderExt;
 
-use pipeline::vision::CustomVisionLoaderBuilder;
 
 const MODEL_ID: &str = "checkpoints/Qwen2.5-VL-3B-Instruct";
 
 #[tokio::main]
 async fn main() -> Result<()> {
+
+    // this actually called qwen2.5 vl
     let model = VisionModelBuilder::new(MODEL_ID, VisionLoaderType::Qwen2VL)
         .with_isq(IsqType::Q4K)
         .with_logging()
-        .build()
+        .build_custom()
         .await?;
 
     let bytes = match reqwest::blocking::get(

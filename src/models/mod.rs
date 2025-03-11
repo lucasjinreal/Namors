@@ -1,5 +1,6 @@
 pub mod qwen2_5vl;
 pub mod utils;
+pub mod vision_loaders;
 
 use candle_core::Tensor;
 

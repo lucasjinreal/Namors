@@ -1,15 +1,17 @@
 use mistralrs::{
-    best_device, initialize_logging, AutoDeviceMapParams, DefaultSchedulerMethod, DeviceMapSetting, Loader, MistralRsBuilder, Model, SchedulerConfig, VisionLoaderType, VisionModelBuilder, VisionSpecificConfig
+    best_device, initialize_logging, AutoDeviceMapParams, DefaultSchedulerMethod, DeviceMapSetting,
+    Loader, MistralRsBuilder, Model, SchedulerConfig, VisionLoaderBuilder, VisionLoaderType,
+    VisionModelBuilder, VisionSpecificConfig,
 };
 
 use super::vision::VisionLoaderBuilderExt;
 
 pub trait VisionModelBuilderExt {
-    fn build_custom(self) -> anyhow::Result<Model>;
+    async fn build_custom(self) -> anyhow::Result<Model>;
 }
 
 impl VisionModelBuilderExt for VisionModelBuilder {
-    fn build_custom(self) -> anyhow::Result<Model> {
+    async fn build_custom(self) -> anyhow::Result<Model> {
         let config = VisionSpecificConfig {
             use_flash_attn: self.use_flash_attn,
             prompt_chunksize: self.prompt_chunksize,
@@ -25,13 +27,13 @@ impl VisionModelBuilderExt for VisionModelBuilder {
             initialize_logging();
         }
 
-        let loader = VisionLoaderBuilderExt::new(
+        let loader = VisionLoaderBuilder::new(
             config,
             self.chat_template,
             self.tokenizer_json,
             Some(self.model_id),
         )
-        .build(self.loader_type);
+        .build_custom();
 
         // Load, into a Pipeline
         let pipeline = loader.load_model_from_hf(
