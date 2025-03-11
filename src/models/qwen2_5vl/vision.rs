@@ -5,7 +5,7 @@ use candle_nn::{LayerNorm, Linear, Module};
 use mistralrs_quant::{QuantMethod, ShardedVarBuilder};
 
 use mistralrs_core::layers::{self, layer_norm, Activation, Conv3dConfig, Conv3dNoBias, MatMul};
-
+use mistralrs_core::ops::RepeatInterleaveOp;
 use super::config::VisionConfig;
 
 struct PatchEmbed {

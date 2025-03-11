@@ -1,29 +1,17 @@
-use mistralrs::{Loader, VisionLoaderBuilder, VisionLoaderType, VisionSpecificConfig};
-use tokio::sync::RwLock;
+use std::sync::RwLock;
 
-use crate::vision_model::CustomVisionModelBuilder;
+use mistralrs::{Loader, VisionLoader, VisionLoaderBuilder, VisionLoaderType, VisionSpecificConfig};
 
-pub struct CustomVisionLoaderBuilder(VisionLoaderBuilder);
+use super::vision_model::VisionModelBuilderExt;
 
-impl CustomVisionLoaderBuilder {
-    pub fn new(
-        config: VisionSpecificConfig,
-        chat_template: Option<String>,
-        tokenizer_json: Option<String>,
-        model_id: Option<String>,
-    ) -> Self {
-        Self(VisionLoaderBuilder::new(
-            config,
-            chat_template,
-            tokenizer_json,
-            model_id,
-        ))
-    }
+pub trait VisionLoaderBuilderExt {
+    fn build_custom(self) -> Box<dyn Loader>;
+}
 
-    pub fn build(self, loader: VisionLoaderType) -> Box<dyn Loader> {
-        let loader: Box<dyn CustomVisionModelLoader> = match loader {
-            VisionLoaderType::Phi4MM => Box::new(Phi4MMLoader),
-        };
+impl VisionLoaderBuilderExt for VisionLoaderBuilder {
+    fn build_custom(self) -> Box<dyn Loader> {
+        let loader: Box<dyn VisionModelBuilderExt> = VisionModelBuilderExt::new();
+
         Box::new(VisionLoader {
             inner: loader,
             model_id: self.model_id.unwrap(),
