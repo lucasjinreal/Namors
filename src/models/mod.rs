@@ -2,6 +2,9 @@ pub mod qwen2_5vl;
 pub mod utils;
 pub mod vision_loaders;
 
+pub mod simnn;
+pub mod ves;
+
 use candle_core::Tensor;
 
 pub fn extract_logits(
